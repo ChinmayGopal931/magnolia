@@ -302,4 +302,164 @@ async approveAgent(
       throw error;
     }
   }
+
+  private formatPriceForHyperliquid(price: number | string, szDecimals: number): string {
+    const MAX_DECIMALS = 6; // For perpetuals
+    const MAX_SIG_FIGS = 5;
+    const maxDecimalPlaces = MAX_DECIMALS - szDecimals;
+    
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    
+    // Handle integer prices (always allowed)
+    if (numPrice === Math.floor(numPrice)) {
+      return numPrice.toString();
+    }
+    
+    // Format to appropriate decimal places
+    let formatted = numPrice.toFixed(maxDecimalPlaces);
+    formatted = formatted.replace(/\.?0+$/, ''); // Remove trailing zeros
+    
+    // Check significant figures
+    const sigFigs = formatted.replace(/^0+\.?0*/, '').replace(/\./g, '').length;
+    
+    if (sigFigs > MAX_SIG_FIGS) {
+      const precision = Math.min(maxDecimalPlaces, MAX_SIG_FIGS - Math.floor(Math.log10(Math.abs(numPrice))) - 1);
+      formatted = numPrice.toFixed(Math.max(0, precision));
+      formatted = formatted.replace(/\.?0+$/, '');
+    }
+    
+    return formatted;
+  }
+
+  async placeOrder(agentId: string, params: {
+    asset: number;
+    isBuy: boolean;
+    price: string;
+    size: string;
+    reduceOnly?: boolean;
+    orderType?: 'limit' | 'market';
+    timeInForce?: 'Gtc' | 'Ioc' | 'Alo';
+    cloid?: string;
+  }): Promise<any> {
+    try {
+      const agent = await this.agentRepository.getApproved(agentId);
+      
+      if (!agent) {
+        throw new Error('Approved agent not found');
+      }
+      
+      const privateKey = agent.private_key_encrypted as string;
+      
+      const exchangeClient = new hl.ExchangeClient({
+        wallet: new ethers.Wallet(privateKey),
+        transport: this.transport,
+        isTestnet: this.useTestnet
+      });
+      
+      // Get asset metadata to determine szDecimals
+      const meta = await this.infoClient.meta();
+      const assetInfo = meta.universe[params.asset];
+      
+      if (!assetInfo) {
+        throw new Error(`Asset index ${params.asset} not found`);
+      }
+      
+      // Format price properly for Hyperliquid
+      const formattedPrice = params.orderType === 'market' 
+        ? '0' 
+        : this.formatPriceForHyperliquid(params.price, assetInfo.szDecimals);
+      
+      const order = {
+        a: params.asset,
+        b: params.isBuy,
+        p: formattedPrice,
+        s: params.size,
+        r: params.reduceOnly || false,
+        t: params.orderType === 'market' 
+          ? { limit: { tif: 'Ioc' } }
+          : { limit: { tif: params.timeInForce || 'Gtc' } },
+        ...(params.cloid && { c: params.cloid as `0x${string}` })
+      } as any;
+      
+      logger.info(`Placing order: ${JSON.stringify(order)} (original price: ${params.price}, formatted: ${formattedPrice})`);
+      
+      const result = await exchangeClient.order({
+        orders: [order],
+        grouping: 'na' as const
+      });
+      
+      return result;
+    } catch (error) {
+      logger.error('Error placing order:', error);
+      throw error;
+    }
+  }
+
+  async cancelOrder(agentId: string, params: {
+    asset: number;
+    orderId: number;
+  }): Promise<any> {
+    try {
+      const agent = await this.agentRepository.getApproved(agentId);
+      
+      if (!agent) {
+        throw new Error('Approved agent not found');
+      }
+      
+      const privateKey = agent.private_key_encrypted as string;
+      
+      const exchangeClient = new hl.ExchangeClient({
+        wallet: new ethers.Wallet(privateKey),
+        transport: this.transport,
+        isTestnet: this.useTestnet
+      });
+      
+      const result = await exchangeClient.cancel({
+        cancels: [{
+          a: params.asset,
+          o: params.orderId
+        }]
+      });
+      
+      logger.info(`Canceled order: asset=${params.asset}, orderId=${params.orderId}`);
+      return result;
+    } catch (error) {
+      logger.error('Error canceling order:', error);
+      throw error;
+    }
+  }
+
+  async cancelOrderByCloid(agentId: string, params: {
+    asset: number;
+    cloid: string;
+  }): Promise<any> {
+    try {
+      const agent = await this.agentRepository.getApproved(agentId);
+      
+      if (!agent) {
+        throw new Error('Approved agent not found');
+      }
+      
+      const privateKey = agent.private_key_encrypted as string;
+      
+      const exchangeClient = new hl.ExchangeClient({
+        wallet: new ethers.Wallet(privateKey),
+        transport: this.transport,
+        isTestnet: this.useTestnet
+      });
+      
+      const result = await exchangeClient.cancelByCloid({
+        cancels: [{
+          asset: params.asset,
+          cloid: params.cloid as `0x${string}`
+        }]
+      });
+      
+      logger.info(`Canceled order by cloid: asset=${params.asset}, cloid=${params.cloid}`);
+      return result;
+    } catch (error) {
+      logger.error('Error canceling order by cloid:', error);
+      throw error;
+    }
+  }
 }

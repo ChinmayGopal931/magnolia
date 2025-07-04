@@ -1,10 +1,4 @@
-import winston from 'winston';
 
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.json(),
-  transports: [new winston.transports.Console()],
-});
 
 export interface AgentApprovalParams {
   agentAddress: string;
@@ -26,16 +20,8 @@ export class HyperliquidAPI {
    */
   static async approveAgent(params: AgentApprovalParams): Promise<ApprovalResponse> {
     try {
-      console.log('🔐 === APPROVE AGENT DEBUG START ===');
-      console.log('🔐 Input params:', {
-        agentAddress: params.agentAddress,
-        agentName: params.agentName,
-        signatureStart: params.signature,
-        signatureEnd: params.signature,
-        useTestnet: params.useTestnet
-      });
 
-      const { agentAddress, agentName = 'Hyper-rektAgent', signature, useTestnet } = params;
+      const { signature, useTestnet } = params;
       
       // Validate signature format - accept both string and RSV object
       if (!signature) {
@@ -49,47 +35,40 @@ export class HyperliquidAPI {
         throw new Error('Signature must be hex string or RSV object');
       }
 
-      console.log('🔐 Signature validation passed');
 
-      const nonce = Date.now();
-      console.log('🔐 Generated nonce:', nonce);
-
-      // Create action according to Hyperliquid API docs
+      // Use the original action from the frontend (including its nonce)
+      const originalAction = params.action;
+      
+      // Validate that the original action has the required fields
+      if (!originalAction || !originalAction.nonce) {
+        throw new Error('Original action with nonce is required from frontend');
+      }
+      
       const action = {
         type: 'approveAgent',
         hyperliquidChain: useTestnet ? 'Testnet' : 'Mainnet',
-        signatureChainId: useTestnet ? '0x66eee' : '0xa4b1', // Arbitrum Sepolia : Arbitrum One
-        agentAddress,
-        agentName: agentName || "",
-        nonce
+        signatureChainId: useTestnet ? '0x66eee' : '0xa4b1',
+        agentAddress: originalAction.agentAddress,
+        agentName: originalAction.agentName || "",
+        nonce: originalAction.nonce // Use the original nonce from frontend
       };
 
-      console.log('🔐 Action before cleanup:', JSON.stringify(action, null, 2));
 
       // Clean up empty agentName like the SDK does
       if (action.agentName === "") {
         delete (action as any).agentName;
-        console.log('🔐 Removed empty agentName from action');
       }
-
-      console.log('🔐 Action after cleanup:', JSON.stringify(action, null, 2));
-
-      // Use signature as-is (SDK returns RSV object which is what API expects)
-      console.log('🔐 Using signature as provided by SDK:', signature);
 
       // Prepare request body according to API docs
       const requestBody = {
         action,
         signature: signature, // Use as-is (RSV object or hex string)
-        nonce
+        nonce: action.nonce // Use the action's nonce, not a separate one
       };
 
       const baseUrl = useTestnet 
         ? 'https://api.hyperliquid-testnet.xyz' 
         : 'https://api.hyperliquid.xyz';
-
-      console.log('🔐 Base URL:', baseUrl);
-      console.log('🔐 Full request body:', JSON.stringify(requestBody, null, 2));
 
       const response = await fetch(`${baseUrl}/exchange`, {
         method: 'POST',
@@ -98,12 +77,7 @@ export class HyperliquidAPI {
         },
         body: JSON.stringify(requestBody)
       });
-
-      console.log('🔐 Response status:', response.status);
-      console.log('🔐 Response headers:', Object.fromEntries(response.headers.entries()));
-
       const responseText = await response.text();
-      console.log('🔐 Raw response body:', responseText);
 
       if (!response.ok) {
         console.error('❌ HTTP Error - Status:', response.status);
@@ -114,17 +88,13 @@ export class HyperliquidAPI {
       let result: any;
       try {
         result = JSON.parse(responseText);
-        console.log('🔐 Parsed response:', JSON.stringify(result, null, 2));
       } catch (e) {
         console.error('❌ Failed to parse response as JSON:', responseText);
         console.error('❌ Parse error:', e);
         throw new Error('Invalid JSON response from exchange');
       }
 
-      console.log('🔐 Checking response status...');
       if (result.status === 'ok') {
-        console.log(`✅ Agent ${agentAddress} approved successfully!`);
-        console.log('🔐 === APPROVE AGENT DEBUG END - SUCCESS ===');
         return { success: true };
       } else {
         const errorMessage = result.error?.message || result.message || JSON.stringify(result);

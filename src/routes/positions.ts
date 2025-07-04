@@ -62,4 +62,84 @@ router.get('/market/:coin', async (req: Request, res: Response) => {
   }
 });
 
+// Place direct order (new endpoint)
+router.post('/order', async (req: Request, res: Response) => {
+  try {
+    const { 
+      agentId, 
+      asset, 
+      isBuy, 
+      price, 
+      size, 
+      reduceOnly = false,
+      orderType = 'limit',
+      timeInForce = 'Gtc'
+    } = req.body;
+    
+    if (!agentId || asset === undefined || isBuy === undefined || !price || !size) {
+      return res.status(400).json({ 
+        error: 'agentId, asset, isBuy, price, and size are required' 
+      });
+    }
+    
+    const result = await hyperliquidService.placeOrder(agentId, {
+      asset,
+      isBuy,
+      price,
+      size,
+      reduceOnly,
+      orderType,
+      timeInForce
+    });
+    
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Cancel order (new endpoint)
+router.post('/order/cancel', async (req: Request, res: Response) => {
+  try {
+    const { agentId, asset, orderId } = req.body;
+    
+    if (!agentId || asset === undefined || !orderId) {
+      return res.status(400).json({ 
+        error: 'agentId, asset, and orderId are required' 
+      });
+    }
+    
+    const result = await hyperliquidService.cancelOrder(agentId, {
+      asset,
+      orderId
+    });
+    
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Cancel order by client order ID (new endpoint)
+router.post('/order/cancel-by-cloid', async (req: Request, res: Response) => {
+  try {
+    const { agentId, asset, cloid } = req.body;
+    
+    if (!agentId || asset === undefined || !cloid) {
+      return res.status(400).json({ 
+        error: 'agentId, asset, and cloid are required' 
+      });
+    }
+    
+    const result = await hyperliquidService.cancelOrderByCloid(agentId, {
+      asset,
+      cloid
+    });
+    
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
