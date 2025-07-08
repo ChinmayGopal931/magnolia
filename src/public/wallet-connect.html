@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magnolia - Connect Wallet</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .wallet-container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .button.disconnect {
+            background-color: #f44336;
+            display: none;
+        }
+        .status-container {
+            margin-top: 20px;
+        }
+        .connected {
+            color: green;
+            font-weight: bold;
+        }
+        .disconnected {
+            color: red;
+        }
+        #wallet-address {
+            background-color: #f1f1f1;
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Magnolia - GMX Integration</h1>
+    <p>Connect your wallet to use GMX trading features</p>
+    
+    <div class="wallet-container">
+        <h2>Wallet Connection</h2>
+        <button id="connect-wallet" class="button">Connect Wallet</button>
+        <button id="disconnect-wallet" class="button disconnect">Disconnect</button>
+        
+        <div class="status-container">
+            <p>Status: <span id="wallet-status" class="disconnected">Disconnected</span></p>
+            <p>Address: <span id="wallet-address"></span></p>
+        </div>
+    </div>
+    
+    <div class="wallet-container">
+        <h2>GMX Trading</h2>
+        <p>Once connected, you can use your wallet to trade on GMX</p>
+        <p><em>Note: Wallet connection is required for all GMX operations</em></p>
+    </div>
+
+    <script src="js/wallet-connect.js"></script>
+</body>
+</html>

@@ -4,31 +4,44 @@
   "description": "DEX Position Management Service",
   "main": "dist/app.js",
   "scripts": {
+    "test:gmx-flow-api": "mocha -r ts-node/register src/tests/gmx-flow-api.test.ts",
     "dev": "nodemon --exec ts-node src/app.ts",
     "build": "tsc",
     "start": "node dist/app.js",
     "migrate": "docker exec -i magnolia-postgres-1 psql -U postgres -d position_manager < db/migrations/001_initial_schema.sql",
-    "migrate:create-db": "docker exec magnolia-postgres-1 psql -U postgres -c 'CREATE DATABASE position_manager;'"
+    "migrate:create-db": "docker exec magnolia-postgres-1 psql -U postgres -c 'CREATE DATABASE position_manager;'",
+    "test": "mocha -r ts-node/register src/tests/**/*.test.ts",
+    "test:gmx": "mocha -r ts-node/register src/tests/gmx-integration.test.ts"
   },
   "dependencies": {
+    "@gmx-io/sdk": "^1.1.2",
     "@nktkas/hyperliquid": "^0.21.1",
     "@types/cors": "^2.8.19",
+    "@types/jsonwebtoken": "^9.0.10",
     "aws-sdk": "^2.1498.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "ethers": "^6.9.0",
     "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
     "node-cron": "^3.0.3",
     "pg": "^8.11.3",
     "redis": "^4.6.10",
+    "viem": "^2.31.6",
     "winston": "^3.11.0"
   },
   "devDependencies": {
+    "@types/chai": "^4.3.11",
     "@types/express": "^4.17.21",
+    "@types/mocha": "^10.0.6",
     "@types/node": "^20.10.4",
     "@types/node-cron": "^3.0.11",
     "@types/pg": "^8.10.9",
+    "@types/supertest": "^6.0.3",
+    "chai": "^4.3.10",
+    "mocha": "^10.2.0",
     "nodemon": "^3.0.2",
+    "supertest": "^7.1.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }

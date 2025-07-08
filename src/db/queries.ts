@@ -102,6 +102,30 @@ export const AgentQueries = {
     return await query(`
       SELECT * FROM agents WHERE id = $1 AND status = 'approved'
     `, [agentId]);
+  },
+
+  // Get agent by wallet address
+  getAgentByAddress: async (address: string) => {
+    return await query(`
+      SELECT * FROM agents WHERE address = $1
+    `, [address]);
+  },
+
+  // Get agent by user ID and DEX
+  getAgentByUserIdAndDex: async (userId: string, dex: string) => {
+    return await query(`
+      SELECT * FROM agents 
+      WHERE user_id = $1 AND dex = $2
+    `, [userId, dex]);
+  },
+
+  // Update agent address
+  updateAgentAddress: async (agentId: string, address: string) => {
+    return await query(`
+      UPDATE agents 
+      SET address = $1 
+      WHERE id = $2
+    `, [address, agentId]);
   }
 };
 

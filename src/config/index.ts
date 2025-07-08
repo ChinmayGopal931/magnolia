@@ -14,6 +14,16 @@ export const config = {
     hyperliquid: {
         testnet: process.env.HYPERLIQUID_TESTNET === "true",
     },
+    gmx: {
+        rpcUrl: process.env.GMX_RPC_URL || "https://avalanche-fuji-c-chain.publicnode.com",
+        oracleUrl: process.env.GMX_ORACLE_URL || "https://avalanche-api.gmxinfra.io",
+        subsquidUrl: process.env.GMX_SUBSQUID_URL || "https://gmx-fuji.squids.live/gmx-synthetics-fuji/graphql",
+        chainId: parseInt(process.env.GMX_CHAIN_ID || "43113"), // Avalanche Fuji
+    },
+    jwt: {
+        secret: process.env.JWT_SECRET || "magnolia-dev-secret",
+        expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    },
     monitoring: {
         intervalMinutes: parseInt(process.env.MONITOR_INTERVAL_MINUTES || "30"),
     },

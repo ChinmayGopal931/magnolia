@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magnolia - GMX Actions</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    header {
+      background-color: #1a1a2e;
+      color: white;
+      padding: 1rem 0;
+      text-align: center;
+    }
+    h1 {
+      margin: 0;
+    }
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      margin-top: 2rem;
+    }
+    .btn {
+      background-color: #4361ee;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-right: 1rem;
+      margin-bottom: 1rem;
+    }
+    .btn:hover {
+      background-color: #3a56d4;
+    }
+    .btn:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .btn-success {
+      background-color: #28a745;
+    }
+    .btn-success:hover {
+      background-color: #218838;
+    }
+    .btn-danger {
+      background-color: #dc3545;
+    }
+    .btn-danger:hover {
+      background-color: #c82333;
+    }
+    .btn-warning {
+      background-color: #ffc107;
+      color: #212529;
+    }
+    .btn-warning:hover {
+      background-color: #e0a800;
+    }
+    .status {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 4px;
+    }
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    .status.info {
+      background-color: #e2f3f5;
+      color: #0c5460;
+    }
+    .wallet-info {
+      margin-top: 1rem;
+      display: none;
+    }
+    .wallet-address {
+      font-family: monospace;
+      word-break: break-all;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .action-buttons {
+      margin-top: 2rem;
+      display: none;
+    }
+    .action-buttons h3 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+    .parameter-section {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+    }
+    .parameter-section h4 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    input {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    .transaction-log {
+      margin-top: 2rem;
+      padding: 1rem;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .transaction-item {
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
+      border-radius: 4px;
+    }
+    .transaction-item:nth-child(odd) {
+      background-color: #e9ecef;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Magnolia - GMX Actions</h1>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h2>Connect Your Wallet</h2>
+      <p>Connect your wallet to perform GMX operations on the Avalanche Fuji testnet.</p>
+      <button id="connectBtn" class="btn">Connect MetaMask</button>
+      <button id="disconnectBtn" class="btn" style="display: none;">Disconnect</button>
+      
+      <div id="status" class="status" style="display: none;"></div>
+      
+      <div id="walletInfo" class="wallet-info">
+        <h3>Wallet Connected</h3>
+        <p><strong>Address:</strong> <span id="walletAddress" class="wallet-address"></span></p>
+        <p><strong>Network:</strong> <span id="networkName"></span></p>
+      </div>
+
+      <!-- GMX Action Buttons -->
+      <div id="actionButtons" class="action-buttons">
+        <h3>GMX Operations</h3>
+        <p>Perform the following operations on GMX Fuji testnet.</p>
+
+        <!-- Open Long Position -->
+        <div class="parameter-section">
+          <h4>Open Long Position (AVAX to WBTC)</h4>
+          <div class="form-group">
+            <label for="longAmount">AVAX Amount:</label>
+            <input type="text" id="longAmount" value="0.1" placeholder="Amount in AVAX (e.g. 0.1)">
+          </div>
+          <div class="form-group">
+            <label for="longLeverage">Leverage:</label>
+            <input type="text" id="longLeverage" value="2" placeholder="Leverage (e.g. 2)">
+          </div>
+          <button id="openLongBtn" class="btn btn-success">Open Long Position</button>
+        </div>
+
+        <!-- Close Position -->
+        <div class="parameter-section">
+          <h4>Close Position</h4>
+          <div class="form-group">
+            <label for="positionPercentage">Percentage to Close:</label>
+            <input type="text" id="positionPercentage" value="100" placeholder="Percentage (1-100)">
+          </div>
+          <button id="closePositionBtn" class="btn btn-danger">Close Position</button>
+        </div>
+
+        <!-- Swap Tokens -->
+        <div class="parameter-section">
+          <h4>Swap Tokens (AVAX to USDC)</h4>
+          <div class="form-group">
+            <label for="swapAmount">AVAX Amount:</label>
+            <input type="text" id="swapAmount" value="0.1" placeholder="Amount in AVAX (e.g. 0.1)">
+          </div>
+          <button id="swapBtn" class="btn btn-warning">Swap Tokens</button>
+        </div>
+      </div>
+
+      <!-- Transaction Log -->
+      <div id="transactionLog" class="transaction-log" style="display: none;">
+        <h3>Transaction Log</h3>
+        <div id="logContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Token addresses (will be fetched from API)
+    let WAVAX_TOKEN = "";
+    let WBTC_TOKEN = "";
+    let USDC_TOKEN = "";
+    
+    // GMX market address (Fuji testnet)
+    let WBTC_USD_MARKET = "0x79E6e0E454dE82fA98c02dB012a2A69103630B07";
+    
+    // Available tokens from GMX API
+    let availableTokens = [];
+
+    // DOM Elements
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const statusEl = document.getElementById('status');
+    const walletInfoEl = document.getElementById('walletInfo');
+    const walletAddressEl = document.getElementById('walletAddress');
+    const networkNameEl = document.getElementById('networkName');
+    const actionButtonsEl = document.getElementById('actionButtons');
+    const openLongBtn = document.getElementById('openLongBtn');
+    const closePositionBtn = document.getElementById('closePositionBtn');
+    const swapBtn = document.getElementById('swapBtn');
+    const transactionLogEl = document.getElementById('transactionLog');
+    const logContentEl = document.getElementById('logContent');
+
+    // State
+    let currentAccount = null;
+    let currentChainId = null;
+    let jwtToken = null;
+
+    // Check if MetaMask is installed
+    function isMetaMaskInstalled() {
+      return Boolean(window.ethereum && window.ethereum.isMetaMask);
+    }
+
+    // Debug helper function
+    function logDebug(message, data) {
+      console.log(`[DEBUG] ${message}`, data);
+    }
+
+    // Show status message
+    function showStatus(message, type) {
+      statusEl.textContent = message;
+      statusEl.className = `status ${type}`;
+      statusEl.style.display = 'block';
+    }
+
+    // Hide status message
+    function hideStatus() {
+      statusEl.style.display = 'none';
+    }
+
+    // Log transaction
+    function logTransaction(message, isError = false) {
+      const logItem = document.createElement('div');
+      logItem.className = `transaction-item${isError ? ' error' : ''}`;
+      logItem.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+      logContentEl.appendChild(logItem);
+      transactionLogEl.style.display = 'block';
+      logItem.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Get network name from chain ID
+    function getNetworkName(chainId) {
+      const networks = {
+        '0x1': 'Ethereum Mainnet',
+        '0xa86a': 'Avalanche Mainnet',
+        '0xa869': 'Avalanche Fuji Testnet',
+        '0x5': 'Goerli Testnet',
+        '0x89': 'Polygon Mainnet',
+        '0x13881': 'Polygon Mumbai Testnet'
+      };
+      return networks[chainId] || `Unknown Network (${chainId})`;
+    }
+
+    // Fetch available tokens from the GMX API
+    async function fetchAvailableTokens() {
+      try {
+        showStatus('Fetching available tokens from GMX...', 'info');
+        
+        const response = await fetch('/api/gmx/tokens');
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}`);
+        }
+        
+        availableTokens = await response.json();
+        
+        // Log available tokens for debugging
+        logDebug('Available tokens:', availableTokens);
+        
+        // Find WAVAX token
+        const wavaxToken = availableTokens.find(t => t.symbol === 'WAVAX');
+        if (wavaxToken) {
+          WAVAX_TOKEN = wavaxToken.address;
+          logDebug('WAVAX token address:', WAVAX_TOKEN);
+        } else {
+          console.warn('WAVAX token not found in available tokens');
+        }
+        
+        // Find WBTC token
+        const wbtcToken = availableTokens.find(t => t.symbol === 'WBTC');
+        if (wbtcToken) {
+          WBTC_TOKEN = wbtcToken.address;
+          logDebug('WBTC token address:', WBTC_TOKEN);
+        } else {
+          console.warn('WBTC token not found in available tokens');
+        }
+        
+        // Find USDC token
+        const usdcToken = availableTokens.find(t => t.symbol === 'USDC');
+        if (usdcToken) {
+          USDC_TOKEN = usdcToken.address;
+          logDebug('USDC token address:', USDC_TOKEN);
+        } else {
+          console.warn('USDC token not found in available tokens');
+        }
+        
+        hideStatus();
+        return true;
+      } catch (error) {
+        console.error('Error fetching available tokens:', error);
+        showStatus(`Failed to fetch tokens: ${error.message}`, 'error');
+        return false;
+      }
+    }
+    
+    // Initialize the page
+    async function init() {
+      // Check if MetaMask is installed
+      if (!isMetaMaskInstalled()) {
+        showStatus('MetaMask is not installed. Please install MetaMask to use this page.', 'error');
+        disableActionButtons();
+        return;
+      }
+
+      // Add MetaMask event listeners
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+      window.ethereum.on('chainChanged', handleChainChanged);
+      window.ethereum.on('disconnect', handleDisconnect);
+      
+      // Fetch available tokens
+      await fetchAvailableTokens();
+      
+      // Check if already connected
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          handleAccountsChanged(accounts);
+        } else {
+          updateUIOnDisconnect();
+        }
+      } catch (error) {
+        console.error('Error checking accounts:', error);
+        updateUIOnDisconnect();
+      }
+    }
+
+    // Handle accounts changed
+    function handleAccountsChanged(accounts) {
+      if (accounts.length === 0) {
+        // User disconnected their wallet
+        handleDisconnect();
+        return;
+      }
+
+      currentAccount = accounts[0];
+      logDebug('Account changed', currentAccount);
+      
+      window.ethereum.request({ method: 'eth_chainId' })
+        .then(chainId => {
+          currentChainId = chainId;
+          updateUIOnConnect();
+        });
+    }
+
+    // Handle chain changed
+    function handleChainChanged(chainId) {
+      currentChainId = chainId;
+      logDebug('Chain changed', chainId);
+      window.location.reload();
+    }
+
+    // Handle disconnect
+    function handleDisconnect() {
+      currentAccount = null;
+      jwtToken = null;
+      updateUIOnDisconnect();
+      showStatus('Wallet disconnected', 'info');
+    }
+
+    // Update UI when connected
+    function updateUIOnConnect() {
+      connectBtn.style.display = 'none';
+      disconnectBtn.style.display = 'inline-block';
+      walletInfoEl.style.display = 'block';
+      actionButtonsEl.style.display = 'block';
+      
+      walletAddressEl.textContent = currentAccount;
+      networkNameEl.textContent = getNetworkName(currentChainId);
+      
+      // Check if we're on Fuji testnet
+      if (currentChainId !== '0xa869') {
+        showStatus('Please connect to Avalanche Fuji Testnet to use GMX functions', 'warning');
+        disableActionButtons();
+      } else {
+        hideStatus();
+        enableActionButtons();
+        // Authenticate with backend
+        authenticateWithBackend();
+      }
+    }
+
+    // Update UI when disconnected
+    function updateUIOnDisconnect() {
+      connectBtn.style.display = 'inline-block';
+      disconnectBtn.style.display = 'none';
+      walletInfoEl.style.display = 'none';
+      actionButtonsEl.style.display = 'none';
+    }
+
+    // Enable action buttons
+    function enableActionButtons() {
+      openLongBtn.disabled = false;
+      closePositionBtn.disabled = false;
+      swapBtn.disabled = false;
+    }
+
+    // Disable action buttons
+    function disableActionButtons() {
+      openLongBtn.disabled = true;
+      closePositionBtn.disabled = true;
+      swapBtn.disabled = true;
+    }
+
+    // Connect wallet
+    async function connectWallet() {
+      try {
+        showStatus('Connecting to MetaMask...', 'info');
+        const accounts = await window.ethereum.request({ 
+          method: 'eth_requestAccounts' 
+        });
+        hideStatus();
+        handleAccountsChanged(accounts);
+      } catch (error) {
+        logDebug('Error connecting to MetaMask', error);
+        showStatus(`Error connecting: ${error.message}`, 'error');
+      }
+    }
+
+    // Disconnect wallet (for UI only, MetaMask doesn't support programmatic disconnect)
+    function disconnectWallet() {
+      handleDisconnect();
+      showStatus('Wallet disconnected from application. Note that MetaMask still considers this site connected.', 'info');
+    }
+
+    // Authenticate with backend
+    async function authenticateWithBackend() {
+      try {
+        showStatus('Authenticating with server...', 'info');
+        
+        // Step 1: Get nonce
+        const nonceResponse = await fetch('/api/gmx-auth/nonce', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ address: currentAccount }),
+        });
+
+        if (!nonceResponse.ok) {
+          throw new Error(`Server returned ${nonceResponse.status}: ${await nonceResponse.text()}`);
+        }
+
+        const nonceData = await nonceResponse.json();
+        const nonce = nonceData.nonce;
+        logDebug('Got nonce', nonce);
+
+        // Step 2: Sign the nonce with MetaMask
+        const signature = await window.ethereum.request({
+          method: 'personal_sign',
+          params: [
+            `Sign this message to authenticate with the GMX API: ${nonce}`,
+            currentAccount
+          ],
+        });
+        logDebug('Got signature', signature);
+
+        // Step 3: Verify the signature with the backend
+        const verifyResponse = await fetch('/api/gmx-auth/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            address: currentAccount,
+            signature: signature,
+            nonce: nonce
+          }),
+        });
+
+        if (!verifyResponse.ok) {
+          throw new Error(`Server returned ${verifyResponse.status}: ${await verifyResponse.text()}`);
+        }
+
+        const verifyData = await verifyResponse.json();
+        jwtToken = verifyData.token;
+        logDebug('Got JWT token', jwtToken.substring(0, 20) + '...');
+        
+        hideStatus();
+        showStatus('Authenticated successfully!', 'success');
+        setTimeout(hideStatus, 3000);
+        
+        // Get initial positions
+        getPositions();
+        
+      } catch (error) {
+        logDebug('Authentication error', error);
+        showStatus(`Authentication error: ${error.message}`, 'error');
+      }
+    }
+
+    // Get user positions
+    async function getPositions() {
+      if (!jwtToken || !currentAccount) return;
+      
+      try {
+        const response = await fetch(`/api/gmx/positions?address=${currentAccount}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${jwtToken}`,
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}: ${await response.text()}`);
+        }
+
+        const positions = await response.json();
+        logDebug('Positions', positions);
+        
+        if (positions && positions.length > 0) {
+          logTransaction(`Found ${positions.length} active positions`);
+        } else {
+          logTransaction('No active positions found');
+        }
+        
+      } catch (error) {
+        logDebug('Error getting positions', error);
+        logTransaction(`Error getting positions: ${error.message}`, true);
+      }
+    }
+
+    // Open a long position
+    async function openLongPosition() {
+      if (!jwtToken || !currentAccount) {
+        showStatus('Please connect wallet and authenticate first', 'error');
+        return;
+      }
+      
+      try {
+        const amount = document.getElementById('longAmount').value;
+        const leverage = document.getElementById('longLeverage').value;
+        
+        if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+          showStatus('Please enter a valid amount', 'error');
+          return;
+        }
+        
+        if (!leverage || isNaN(parseFloat(leverage)) || parseFloat(leverage) <= 0) {
+          showStatus('Please enter valid leverage', 'error');
+          return;
+        }
+        
+        showStatus('Creating long position...', 'info');
+        openLongBtn.disabled = true;
+        
+        // Convert amount to wei (AVAX has 18 decimals)
+        const amountWei = (parseFloat(amount) * 1e18).toString();
+        
+        // Call the API to create a long position
+        const response = await fetch('/api/gmx/positions/long', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${jwtToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fromTokenAddress: WAVAX_TOKEN,
+            toTokenAddress: WBTC_TOKEN,
+            marketAddress: WBTC_USD_MARKET,
+            fromAmount: amountWei,
+            leverage: parseFloat(leverage),
+            isLong: true,
+            address: currentAccount
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Server returned ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        logDebug('Long position created', data);
+        
+        hideStatus();
+        showStatus('Position created! Check your wallet for the transaction confirmation.', 'success');
+        logTransaction(`Created long position: ${data.txnHash}`);
+        
+        // Get updated positions after a delay
+        setTimeout(getPositions, 5000);
+        
+      } catch (error) {
+        logDebug('Error creating long position', error);
+        showStatus(`Error: ${error.message}`, 'error');
+        logTransaction(`Error creating long position: ${error.message}`, true);
+      } finally {
+        openLongBtn.disabled = false;
+      }
+    }
+
+    // Close position
+    async function closePosition() {
+      if (!jwtToken || !currentAccount) {
+        showStatus('Please connect wallet and authenticate first', 'error');
+        return;
+      }
+      
+      try {
+        const percentage = document.getElementById('positionPercentage').value;
+        
+        if (!percentage || isNaN(parseFloat(percentage)) || parseFloat(percentage) <= 0 || parseFloat(percentage) > 100) {
+          showStatus('Please enter a valid percentage (1-100)', 'error');
+          return;
+        }
+        
+        showStatus('Fetching positions...', 'info');
+        closePositionBtn.disabled = true;
+        
+        // First get positions to find what to close
+        const posResponse = await fetch(`/api/gmx/positions?address=${currentAccount}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${jwtToken}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!posResponse.ok) {
+          throw new Error(`Server returned ${posResponse.status}: ${await posResponse.text()}`);
+        }
+        
+        const positions = await posResponse.json();
+        logDebug('Positions to close', positions);
+        
+        if (!positions || positions.length === 0) {
+          throw new Error('No open positions found to close');
+        }
+        
+        // Find the WBTC position
+        const position = positions.find(p => 
+          p.marketAddress.toLowerCase() === WBTC_USD_MARKET.toLowerCase() && p.isLong
+        );
+        
+        if (!position) {
+          throw new Error('No matching WBTC long position found');
+        }
+        
+        showStatus('Closing position...', 'info');
+        
+        // Calculate the size delta based on percentage
+        const sizeDeltaUsd = (parseFloat(position.sizeInUsd) * parseFloat(percentage) / 100).toString();
+        
+        // Call the API to close the position
+        const response = await fetch('/api/gmx/positions/close', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${jwtToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            marketAddress: position.marketAddress,
+            isLong: position.isLong,
+            sizeDeltaUsd: sizeDeltaUsd,
+            acceptablePrice: position.entryPrice, // Use entry price as acceptable price for now
+            address: currentAccount
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Server returned ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        logDebug('Position closed', data);
+        
+        hideStatus();
+        showStatus('Position closed! Check your wallet for the transaction confirmation.', 'success');
+        logTransaction(`Closed position: ${data.txnHash}`);
+        
+        // Get updated positions after a delay
+        setTimeout(getPositions, 5000);
+        
+      } catch (error) {
+        logDebug('Error closing position', error);
+        showStatus(`Error: ${error.message}`, 'error');
+        logTransaction(`Error closing position: ${error.message}`, true);
+      } finally {
+        closePositionBtn.disabled = false;
+      }
+    }
+
+    // Swap tokens
+    async function swapTokens() {
+      if (!jwtToken || !currentAccount) {
+        showStatus('Please connect wallet and authenticate first', 'error');
+        return;
+      }
+      
+      try {
+        const amount = document.getElementById('swapAmount').value;
+        
+        if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+          showStatus('Please enter a valid amount', 'error');
+          return;
+        }
+        
+        showStatus('Swapping tokens...', 'info');
+        swapBtn.disabled = true;
+        
+        // Convert amount to wei (AVAX has 18 decimals)
+        const amountWei = (parseFloat(amount) * 1e18).toString();
+        
+        // Call the API to swap tokens
+        const response = await fetch('/api/gmx/swap', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${jwtToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fromTokenAddress: WAVAX_TOKEN,
+            toTokenAddress: USDC_TOKEN,
+            fromAmount: amountWei,
+            address: currentAccount
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Server returned ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        logDebug('Tokens swapped', data);
+        
+        hideStatus();
+        showStatus('Tokens swapped! Check your wallet for the transaction confirmation.', 'success');
+        logTransaction(`Swapped tokens: ${data.txnHash}`);
+        
+      } catch (error) {
+        logDebug('Error swapping tokens', error);
+        showStatus(`Error: ${error.message}`, 'error');
+        logTransaction(`Error swapping tokens: ${error.message}`, true);
+      } finally {
+        swapBtn.disabled = false;
+      }
+    }
+
+    // Event listeners
+    connectBtn.addEventListener('click', connectWallet);
+    disconnectBtn.addEventListener('click', disconnectWallet);
+    openLongBtn.addEventListener('click', openLongPosition);
+    closePositionBtn.addEventListener('click', closePosition);
+    swapBtn.addEventListener('click', swapTokens);
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

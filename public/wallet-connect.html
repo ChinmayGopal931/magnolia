@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magnolia - Connect Wallet</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    header {
+      background-color: #1a1a2e;
+      color: white;
+      padding: 1rem 0;
+      text-align: center;
+    }
+    h1 {
+      margin: 0;
+    }
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      margin-top: 2rem;
+    }
+    .btn {
+      background-color: #4361ee;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .btn:hover {
+      background-color: #3a56d4;
+    }
+    .btn:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .status {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 4px;
+    }
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    .status.info {
+      background-color: #e2f3f5;
+      color: #0c5460;
+    }
+    .wallet-info {
+      margin-top: 1rem;
+      display: none;
+    }
+    .wallet-address {
+      font-family: monospace;
+      word-break: break-all;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Magnolia - GMX Wallet Connection</h1>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h2>Connect Your Wallet</h2>
+      <p>Connect your Ethereum wallet to use GMX protocol with Magnolia.</p>
+      
+      <button id="connectBtn" class="btn">Connect MetaMask</button>
+      <button id="disconnectBtn" class="btn" style="display: none; margin-left: 10px;">Disconnect</button>
+      
+      <div id="statusMessage" class="status" style="display: none;"></div>
+      
+      <div id="walletInfo" class="wallet-info">
+        <h3>Wallet Connected</h3>
+        <p><strong>Address:</strong> <span id="walletAddress" class="wallet-address"></span></p>
+        <p><strong>Network:</strong> <span id="networkName"></span></p>
+        <p><strong>Chain ID:</strong> <span id="chainId"></span></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const connectBtn = document.getElementById('connectBtn');
+      const disconnectBtn = document.getElementById('disconnectBtn');
+      const statusMessage = document.getElementById('statusMessage');
+      const walletInfo = document.getElementById('walletInfo');
+      const walletAddressEl = document.getElementById('walletAddress');
+      const networkNameEl = document.getElementById('networkName');
+      const chainIdEl = document.getElementById('chainId');
+      
+      let currentAccount = null;
+      let isConnecting = false;
+      
+      // Check if MetaMask is installed
+      const isMetaMaskInstalled = () => {
+        return typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask;
+      };
+      
+      // Debug helper function
+      const logDebug = (message, data) => {
+        console.log(`[DEBUG] ${message}`, data || '');
+      };
+      
+      // Show status message
+      const showStatus = (message, type) => {
+        statusMessage.textContent = message;
+        statusMessage.className = `status ${type}`;
+        statusMessage.style.display = 'block';
+      };
+      
+      // Hide status message
+      const hideStatus = () => {
+        statusMessage.style.display = 'none';
+      };
+      
+      // Get network name from chain ID
+      const getNetworkName = (chainId) => {
+        const networks = {
+          '0x1': 'Ethereum Mainnet',
+          '0xa4b1': 'Arbitrum One',
+          '0xa': 'Optimism',
+          '0x89': 'Polygon',
+          '0x38': 'Binance Smart Chain',
+          '0xa869': 'Avalanche Fuji Testnet'
+        };
+        return networks[chainId] || `Unknown Network (${chainId})`;
+      };
+      
+      // Initialize the page
+      const init = async () => {
+        if (!isMetaMaskInstalled()) {
+          connectBtn.disabled = true;
+          showStatus('MetaMask is not installed. Please install MetaMask to continue.', 'error');
+          return;
+        }
+        
+        // Check if already connected
+        if (window.ethereum.selectedAddress) {
+          currentAccount = window.ethereum.selectedAddress;
+          updateUIOnConnect();
+        }
+        
+        // Setup event listeners
+        window.ethereum.on('accountsChanged', handleAccountsChanged);
+        window.ethereum.on('chainChanged', handleChainChanged);
+        window.ethereum.on('disconnect', handleDisconnect);
+      };
+      
+      // Handle accounts changed
+      const handleAccountsChanged = (accounts) => {
+        if (accounts.length === 0) {
+          // User disconnected their wallet
+          handleDisconnect();
+        } else if (accounts[0] !== currentAccount) {
+          currentAccount = accounts[0];
+          updateUIOnConnect();
+        }
+      };
+      
+      // Handle chain changed
+      const handleChainChanged = (chainId) => {
+        window.location.reload();
+      };
+      
+      // Handle disconnect
+      const handleDisconnect = () => {
+        currentAccount = null;
+        updateUIOnDisconnect();
+        showStatus('Wallet disconnected', 'info');
+      };
+      
+      // Update UI when connected
+      const updateUIOnConnect = async () => {
+        connectBtn.style.display = 'none';
+        disconnectBtn.style.display = 'inline-block';
+        walletInfo.style.display = 'block';
+        
+        walletAddressEl.textContent = currentAccount;
+        
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        chainIdEl.textContent = chainId;
+        networkNameEl.textContent = getNetworkName(chainId);
+        
+        // Check if on Avalanche Fuji Testnet
+        if (chainId !== '0xa869') { // 0xa869 is Avalanche Fuji Testnet
+          showStatus('Please switch to Avalanche Fuji Testnet to use GMX', 'error');
+        } else {
+          hideStatus();
+          // Get nonce and authenticate with backend
+          await authenticateWithBackend();
+        }
+      };
+      
+      // Update UI when disconnected
+      const updateUIOnDisconnect = () => {
+        connectBtn.style.display = 'inline-block';
+        disconnectBtn.style.display = 'none';
+        walletInfo.style.display = 'none';
+      };
+      
+      // Connect wallet
+      const connectWallet = async () => {
+        if (isConnecting) return;
+        
+        isConnecting = true;
+        connectBtn.innerHTML = 'Connecting <span class="loading"></span>';
+        
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          handleAccountsChanged(accounts);
+        } catch (error) {
+          console.error('Error connecting to MetaMask', error);
+          showStatus(`Error connecting to MetaMask: ${error.message}`, 'error');
+        } finally {
+          isConnecting = false;
+          connectBtn.textContent = 'Connect MetaMask';
+        }
+      };
+      
+      // Disconnect wallet (for UI only, MetaMask doesn't support programmatic disconnect)
+      const disconnectWallet = () => {
+        currentAccount = null;
+        updateUIOnDisconnect();
+        showStatus('Wallet disconnected from this site. Note: MetaMask remains connected.', 'info');
+        localStorage.removeItem('gmx_auth_token');
+      };
+      
+      // Authenticate with backend
+      const authenticateWithBackend = async () => {
+        try {
+          logDebug('Starting authentication with backend');
+          logDebug('Current account', currentAccount);
+          
+          // 1. Get nonce from backend
+          const noncePayload = { walletAddress: currentAccount };
+          logDebug('Requesting nonce with payload', noncePayload);
+          
+          const nonceResponse = await fetch('/api/gmx/auth/nonce', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(noncePayload)
+          });
+          
+          logDebug('Nonce response status', nonceResponse.status);
+          
+          if (!nonceResponse.ok) {
+            const errorText = await nonceResponse.text();
+            logDebug('Nonce error response', errorText);
+            throw new Error(`Failed to get nonce from server: ${nonceResponse.status} ${errorText}`);
+          }
+          
+          const nonceData = await nonceResponse.json();
+          logDebug('Nonce response data', nonceData);
+          const nonce = nonceData.nonce;
+          
+          // 2. Sign the nonce with MetaMask
+          const message = `Sign this message to authenticate: ${nonce}`;
+          logDebug('Signing message', message);
+          
+          const signature = await window.ethereum.request({
+            method: 'personal_sign',
+            params: [message, currentAccount]
+          });
+          
+          logDebug('Signature obtained', signature);
+          
+          // 3. Verify signature with backend and get JWT token
+          const verifyPayload = { walletAddress: currentAccount, signature, nonce };
+          logDebug('Verifying signature with payload', verifyPayload);
+          
+          const verifyResponse = await fetch('/api/gmx/auth/verify', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(verifyPayload)
+          });
+          
+          logDebug('Verify response status', verifyResponse.status);
+          
+          if (!verifyResponse.ok) {
+            const errorText = await verifyResponse.text();
+            logDebug('Verify error response', errorText);
+            throw new Error(`Failed to verify signature: ${verifyResponse.status} ${errorText}`);
+          }
+          
+          const tokenData = await verifyResponse.json();
+          logDebug('Token response data', tokenData);
+          const token = tokenData.token;
+          
+          // 4. Store the JWT token
+          localStorage.setItem('gmx_auth_token', token);
+          logDebug('JWT token stored in localStorage');
+          
+          showStatus('Successfully authenticated with Magnolia!', 'success');
+        } catch (error) {
+          console.error('Authentication error:', error);
+          showStatus(`Authentication error: ${error.message}`, 'error');
+        }
+      };
+      
+      // Event listeners
+      connectBtn.addEventListener('click', connectWallet);
+      disconnectBtn.addEventListener('click', disconnectWallet);
+      
+      // Initialize
+      init();
+    });
+  </script>
+</body>
+</html>

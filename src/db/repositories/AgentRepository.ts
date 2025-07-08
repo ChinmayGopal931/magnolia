@@ -57,5 +57,17 @@ export class AgentRepository {
     return result.rows[0] || null;
   }
 
-  
+  async getByAddress(address: string): Promise<DatabaseAgent | null> {
+    const result = await AgentQueries.getAgentByAddress(address);
+    return result.rows[0] || null;
+  }
+
+  async getByUserIdAndDex(userId: string, dex: string): Promise<DatabaseAgent | null> {
+    const result = await AgentQueries.getAgentByUserIdAndDex(userId, dex);
+    return result.rows[0] || null;
+  }
+
+  async updateAddress(agentId: string, address: string): Promise<void> {
+    await AgentQueries.updateAgentAddress(agentId, address);
+  }
 }

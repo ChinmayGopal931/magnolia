@@ -5,6 +5,9 @@ import { config } from "./config";
 import agentRoutes from "./routes/agents";
 import positionRoutes from "./routes/positions";
 import userRoutes from "./routes/users";
+import gmxAuthRoutes from "./routes/gmx-auth";
+import gmxRoutes from "./routes/gmx";
+import { GMXService } from "./services/gmx/GMXService";
 import winston from "winston";
 
 dotenv.config();
@@ -25,6 +28,18 @@ const logger = winston.createLogger({
     ],
 });
 
+// Initialize GMX Service in read-only mode on startup
+(async () => {
+    try {
+        const gmxService = GMXService.getInstance();
+        await gmxService.initializeReadOnly();
+        logger.info('GMXService initialized successfully on startup.');
+    } catch (error) {
+        logger.error('Failed to initialize GMXService on startup:', error);
+        process.exit(1); // Exit if critical service fails to initialize
+    }
+})();
+
 // Middleware
 app.use(cors({
     origin: ['http://localhost:3001', 'http://localhost:3000'], // Allow your frontend origins
@@ -39,10 +54,15 @@ app.get("/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Serve static files for wallet connection UI
+app.use(express.static('src/public'));
+
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/agents", agentRoutes);
 app.use("/api/positions", positionRoutes);
+app.use("/api/gmx-auth", gmxAuthRoutes);
+app.use("/api/gmx", gmxRoutes);
 
 // Error handling
 app.use(
